@@ -81,8 +81,8 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
   @Override
   public void onBindViewHolder(final RecyclerView.ViewHolder holder, int position) {
-    if (holder.getItemViewType() == CATEGORY_VIEW) {
       Message message = messageArrayList.get(position);
+      if (holder.getItemViewType() == CATEGORY_VIEW) {
 
         ((ViewHolderCategory)holder).message.setText(message.message);
         if (message.secondMessage != null) {
@@ -91,14 +91,12 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         } else {
           ((ViewHolderCategory)holder).message2.setVisibility(View.INVISIBLE);
         }
-    } else if (holder.getItemViewType() == GIF_VIEW) {
-      requestManager
-              .load(R.drawable.map)
-              .into(((ViewHolderImage)holder).messageImage);
-
-
-    } else {
-      Message message = messageArrayList.get(position);
+      } else if (holder.getItemViewType() == GIF_VIEW) {
+          int drawableId = message.drawableId;
+          requestManager
+                  .load(drawableId)
+                  .into(((ViewHolderImage)holder).messageImage);
+      } else {
       message.setMessage(message.getMessage());
       ((ViewHolderText) holder).message.setText(message.getMessage());
     }

@@ -1,5 +1,6 @@
 package com.example.vmac.WatBot;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
@@ -11,6 +12,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -66,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
   public final static String SELF_MSG_ID = "1";
   public final static String BOT_MSG_ID = "2";
   public final static String CATEGORY_MSG_ID = "3";
-  public final static String GIF_MSG_ID = "4";
+  public final static String IMG_MSG_ID = "4";
 
   private void createServices() {
     watsonAssistant = new Assistant("2018-11-08", new IamOptions.Builder()
@@ -189,7 +191,11 @@ public class MainActivity extends AppCompatActivity {
               }
 
               if (outMessage.message.contains("found some things")) {
-                loadMapGif();
+                loadCameraOptions();
+              }
+
+              if (outMessage.message.contains("Notifying")){
+                loadSummonGif();
               }
 
               runOnUiThread(new Runnable() {
@@ -209,6 +215,13 @@ public class MainActivity extends AppCompatActivity {
     });
 
     thread.start();
+
+    InputMethodManager imm = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
+    View view = getCurrentFocus();
+    if (view == null) {
+      view = new View(this);
+    }
+    imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
 
   }
 
@@ -248,12 +261,54 @@ public class MainActivity extends AppCompatActivity {
     messageArrayList.add(categoryMessage2);
   }
 
-  private void loadMapGif(){
+  public void showMap(View view){
     Log.d("ChatAdapter", "load map gif");
     Message gifMessage = new Message();
-    gifMessage.id = GIF_MSG_ID;
+    gifMessage.id = IMG_MSG_ID;
+    gifMessage.drawableId = R.drawable.map;
     messageArrayList.add(gifMessage);
+    mAdapter.notifyDataSetChanged();
+    if (mAdapter.getItemCount() > 1) {
+      recyclerView.getLayoutManager().smoothScrollToPosition(recyclerView, null, mAdapter.getItemCount() - 1);
+    }
   }
+
+  public void loadSummonGif(){
+    Log.d("ChatAdapter", "load summon gif");
+    Message gifMessage = new Message();
+    gifMessage.id = IMG_MSG_ID;
+    gifMessage.drawableId = R.drawable.summon;
+    messageArrayList.add(gifMessage);
+    mAdapter.notifyDataSetChanged();
+    if (mAdapter.getItemCount() > 1) {
+      recyclerView.getLayoutManager().smoothScrollToPosition(recyclerView, null, mAdapter.getItemCount() - 1);
+    }
+  }
+
+  private void loadCameraOptions(){
+    Message imageMessage = new Message();
+    imageMessage.id = IMG_MSG_ID;
+    imageMessage.drawableId = R.drawable.cannon;
+    messageArrayList.add(imageMessage);
+
+    Message imageMessage2 = new Message();
+    imageMessage2.id = IMG_MSG_ID;
+    imageMessage2.drawableId = R.drawable.nikon;
+    messageArrayList.add(imageMessage2);
+
+    Message imageMessage3 = new Message();
+    imageMessage3.id = CATEGORY_MSG_ID;
+    imageMessage3.message = "Show More Options";
+    messageArrayList.add(imageMessage3);
+
+    InputMethodManager imm = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
+    View view = getCurrentFocus();
+    if (view == null) {
+      view = new View(this);
+    }
+    imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+  }
+
 
   /**
    * Check Internet Connection
