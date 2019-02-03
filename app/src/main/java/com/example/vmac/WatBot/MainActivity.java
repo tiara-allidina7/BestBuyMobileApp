@@ -198,6 +198,10 @@ public class MainActivity extends AppCompatActivity {
                 loadSummonGif();
               }
 
+              if (outMessage.message.contains("bag for your new camera")) {
+                loadCameraBag();
+              }
+
               runOnUiThread(new Runnable() {
                 public void run() {
                   mAdapter.notifyDataSetChanged();
@@ -300,6 +304,20 @@ public class MainActivity extends AppCompatActivity {
     imageMessage3.id = CATEGORY_MSG_ID;
     imageMessage3.message = "Show More Options";
     messageArrayList.add(imageMessage3);
+
+    InputMethodManager imm = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
+    View view = getCurrentFocus();
+    if (view == null) {
+      view = new View(this);
+    }
+    imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+  }
+
+  private void loadCameraBag(){
+    Message imageMessage = new Message();
+    imageMessage.id = IMG_MSG_ID;
+    imageMessage.drawableId = R.drawable.camera_bag;
+    messageArrayList.add(imageMessage);
 
     InputMethodManager imm = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
     View view = getCurrentFocus();
