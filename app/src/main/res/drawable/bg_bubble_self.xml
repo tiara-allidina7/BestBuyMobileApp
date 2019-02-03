@@ -3,7 +3,7 @@
     android:shape="rectangle">
 
     <!-- view background color -->
-    <solid android:color="@color/bg_bubble_self"></solid>
+    <solid android:color="@color/bb_yellow"></solid>
 
 
     <!-- If you want to add some padding -->

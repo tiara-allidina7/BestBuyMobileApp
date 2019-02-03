@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:focusable="false"
+    android:focusableInTouchMode="false">
+
+    <!--<android.support.v7.widget.AppCompatImageView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_marginLeft="5dp"-->
+        <!--android:src="@mipmap/ic_face" />-->
+
+    <!--<TextView-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:layout_marginLeft="5dp"-->
+        <!--android:text="B"-->
+        <!--android:textSize="22sp"-->
+        <!--android:gravity="center"/>-->
+
+    <TextView
+        android:id="@+id/message_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginTop="5dp"
+        android:padding="15dp"
+        android:fontFamily="sans-serif"
+        android:textColor="@android:color/white"
+        android:textIsSelectable="true"
+        android:background="@color/bg_bubble_self"
+        android:textSize="20sp"
+        android:elevation="5dp"
+        android:focusable="false"
+        android:focusableInTouchMode="false"/>
+
+    <TextView
+        android:id="@+id/message_text2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginTop="5dp"
+        android:padding="15dp"
+        android:fontFamily="sans-serif"
+        android:textColor="@android:color/white"
+        android:textIsSelectable="true"
+        android:background="@color/bg_bubble_self"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:onClick="submitPrice"
+        android:textSize="20sp"
+        android:elevation="5dp"/>
+
+
+</LinearLayout>

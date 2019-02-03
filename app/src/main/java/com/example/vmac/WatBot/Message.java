@@ -7,7 +7,9 @@ package com.example.vmac.WatBot;
 import java.io.Serializable;
 
 public class Message implements Serializable {
-  String id, message;
+  String id, message, imageUrl;
+  String secondMessage;
+  int drawableId;
 
 
   public Message() {

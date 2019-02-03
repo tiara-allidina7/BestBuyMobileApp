@@ -3,13 +3,13 @@
 
     <!--Watson Assistant service credentials-->
     <!-- REPLACE `ASSISTANT_ID_HERE` with ID of the Assistant to use -->
-    <string name="assistant_id">ASSISTANT_ID_HERE</string>
+    <string name="assistant_id">f3c55e99-e3f9-4843-9efd-a499e5fd8af4</string>
 
     <!-- REPLACE `ASSISTANT_API_KEY_HERE` with Watson Assistant service API Key-->
-    <string name="assistant_apikey">ASSISTANT_API_KEY_HERE</string>
+    <string name="assistant_apikey">2hbe4s_nlUG3yISvN6NlYTLU7SIRgGOgIka_lb8MsZKf</string>
 
     <!-- REPLACE `ASSISTANT_URL_HERE` with Watson Assistant service URL-->
-    <string name="assistant_url">ASSISTANT_URL_HERE</string>
+    <string name="assistant_url">https://gateway.watsonplatform.net/assistant/api</string>
 
 
     <!--Watson Speech To Text(STT) service credentials-->

@@ -1,16 +1,10 @@
 package com.example.vmac.WatBot;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -21,12 +15,14 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.ibm.watson.developer_cloud.android.library.audio.MicrophoneHelper;
 import com.ibm.watson.developer_cloud.android.library.audio.MicrophoneInputStream;
 import com.ibm.watson.developer_cloud.android.library.audio.StreamPlayer;
 import com.ibm.watson.developer_cloud.android.library.audio.utils.ContentType;
 import com.ibm.watson.developer_cloud.assistant.v2.Assistant;
 import com.ibm.watson.developer_cloud.assistant.v2.model.CreateSessionOptions;
+import com.ibm.watson.developer_cloud.assistant.v2.model.DialogRuntimeResponseGeneric;
 import com.ibm.watson.developer_cloud.assistant.v2.model.MessageInput;
 import com.ibm.watson.developer_cloud.assistant.v2.model.MessageOptions;
 import com.ibm.watson.developer_cloud.assistant.v2.model.MessageResponse;
@@ -35,13 +31,11 @@ import com.ibm.watson.developer_cloud.http.ServiceCall;
 import com.ibm.watson.developer_cloud.service.security.IamOptions;
 import com.ibm.watson.developer_cloud.speech_to_text.v1.SpeechToText;
 import com.ibm.watson.developer_cloud.speech_to_text.v1.model.RecognizeOptions;
-import com.ibm.watson.developer_cloud.speech_to_text.v1.model.SpeechRecognitionResults;
-import com.ibm.watson.developer_cloud.speech_to_text.v1.websocket.BaseRecognizeCallback;
 import com.ibm.watson.developer_cloud.text_to_speech.v1.TextToSpeech;
-import com.ibm.watson.developer_cloud.text_to_speech.v1.model.SynthesizeOptions;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -49,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
 
   private RecyclerView recyclerView;
   private ChatAdapter mAdapter;
-  private ArrayList messageArrayList;
+  private ArrayList<Message> messageArrayList;
   private EditText inputMessage;
   private ImageButton btnSend;
   private ImageButton btnRecord;
@@ -69,23 +63,16 @@ public class MainActivity extends AppCompatActivity {
   private SpeechToText speechService;
   private TextToSpeech textToSpeech;
 
+  public final static String SELF_MSG_ID = "1";
+  public final static String BOT_MSG_ID = "2";
+  public final static String CATEGORY_MSG_ID = "3";
+  public final static String GIF_MSG_ID = "4";
+
   private void createServices() {
     watsonAssistant = new Assistant("2018-11-08", new IamOptions.Builder()
             .apiKey(mContext.getString(R.string.assistant_apikey))
             .build());
     watsonAssistant.setEndPoint(mContext.getString(R.string.assistant_url));
-
-    textToSpeech = new TextToSpeech();
-    textToSpeech.setIamCredentials(new IamOptions.Builder()
-            .apiKey(mContext.getString(R.string.TTS_apikey))
-            .build());
-    textToSpeech.setEndPoint(mContext.getString(R.string.TTS_url));
-
-    speechService = new SpeechToText();
-    speechService.setIamCredentials(new IamOptions.Builder()
-            .apiKey(mContext.getString(R.string.STT_apikey))
-            .build());
-    speechService.setEndPoint(mContext.getString(R.string.STT_url));
   }
 
   @Override
@@ -104,7 +91,8 @@ public class MainActivity extends AppCompatActivity {
     recyclerView = findViewById(R.id.recycler_view);
 
     messageArrayList = new ArrayList<>();
-    mAdapter = new ChatAdapter(messageArrayList);
+    mAdapter = new ChatAdapter(messageArrayList, Glide.with(this));
+
     microphoneHelper = new MicrophoneHelper(this);
 
     LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -112,104 +100,42 @@ public class MainActivity extends AppCompatActivity {
     recyclerView.setLayoutManager(layoutManager);
     recyclerView.setItemAnimator(new DefaultItemAnimator());
     recyclerView.setAdapter(mAdapter);
+
+
     this.inputMessage.setText("");
     this.initialRequest = true;
 
-
-    int permission = ContextCompat.checkSelfPermission(this,
-      Manifest.permission.RECORD_AUDIO);
-
-    if (permission != PackageManager.PERMISSION_GRANTED) {
-      Log.i(TAG, "Permission to record denied");
-      makeRequest();
-    } else {
-      Log.i(TAG, "Permission to record was already granted");
-    }
-
-
-    recyclerView.addOnItemTouchListener(new RecyclerTouchListener(getApplicationContext(), recyclerView, new ClickListener() {
-      @Override
-      public void onClick(View view, final int position) {
-        Message audioMessage = (Message) messageArrayList.get(position);
-        if (audioMessage != null && !audioMessage.getMessage().isEmpty()) {
-          new SayTask().execute(audioMessage.getMessage());
-        }
-      }
-
-      @Override
-      public void onLongClick(View view, int position) {
-        recordMessage();
-
-      }
-    }));
 
     btnSend.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
         if (checkInternetConnection()) {
-          sendMessage();
+          sendMessage(null);
         }
-      }
-    });
-
-    btnRecord.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        recordMessage();
       }
     });
 
     createServices();
-    sendMessage();
+    sendMessage(null);
   }
 
-  ;
-
-  // Speech-to-Text Record Audio permission
-  @Override
-  public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    switch (requestCode) {
-      case REQUEST_RECORD_AUDIO_PERMISSION:
-        permissionToRecordAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
-        break;
-      case RECORD_REQUEST_CODE: {
-
-        if (grantResults.length == 0
-          || grantResults[0] !=
-          PackageManager.PERMISSION_GRANTED) {
-
-          Log.i(TAG, "Permission has been denied by user");
-        } else {
-          Log.i(TAG, "Permission has been granted by user");
-        }
-        return;
-      }
-
-      case MicrophoneHelper.REQUEST_PERMISSION: {
-        if (grantResults.length > 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-          Toast.makeText(this, "Permission to record audio denied", Toast.LENGTH_SHORT).show();
-        }
-      }
-    }
-    // if (!permissionToRecordAccepted ) finish();
-
-  }
-
-  protected void makeRequest() {
-    ActivityCompat.requestPermissions(this,
-      new String[]{Manifest.permission.RECORD_AUDIO},
-      MicrophoneHelper.REQUEST_PERMISSION);
+  public void submitPrice(View view){
+    Message message = new Message();
+    message.id = SELF_MSG_ID;
+    message.message = "1000";
+    sendMessage("1000");
   }
 
   // Sending a message to Watson Assistant Service
-  private void sendMessage() {
+  private void sendMessage(String message) {
 
-    final String inputmessage = this.inputMessage.getText().toString().trim();
+    message = message == null ? this.inputMessage.getText().toString().trim() : message;
+
+    final String inputmessage = message;
     if (!this.initialRequest) {
       Message inputMessage = new Message();
       inputMessage.setMessage(inputmessage);
-      inputMessage.setId("1");
+      inputMessage.setId(SELF_MSG_ID);
       messageArrayList.add(inputMessage);
     } else {
       Message inputMessage = new Message();
@@ -243,27 +169,38 @@ public class MainActivity extends AppCompatActivity {
             Log.i(TAG, "run: "+response);
           final Message outMessage = new Message();
           if (response != null &&
-            response.getOutput() != null &&
-            !response.getOutput().getGeneric().isEmpty() &&
-            "text".equals(response.getOutput().getGeneric().get(0).getResponseType())) {
-            outMessage.setMessage(response.getOutput().getGeneric().get(0).getText());
-            outMessage.setId("2");
-
-            messageArrayList.add(outMessage);
-
-            // speak the message
-            new SayTask().execute(outMessage.getMessage());
-
-            runOnUiThread(new Runnable() {
-              public void run() {
-                mAdapter.notifyDataSetChanged();
-                if (mAdapter.getItemCount() > 1) {
-                  recyclerView.getLayoutManager().smoothScrollToPosition(recyclerView, null, mAdapter.getItemCount() - 1);
-
-                }
-
+                  response.getOutput() != null &&
+                  !response.getOutput().getGeneric().isEmpty()){
+            List<DialogRuntimeResponseGeneric> responseGenerics = response.getOutput().getGeneric();
+            for (DialogRuntimeResponseGeneric responseGeneric : responseGenerics) {
+              if ("text".equals(responseGeneric.getResponseType())){
+                outMessage.setMessage(responseGeneric.getText());
+                outMessage.setId(BOT_MSG_ID);
               }
-            });
+
+              messageArrayList.add(outMessage);
+
+              if (outMessage.message.contains("Hey Fiza")) {
+                loadCategoryLabels();
+              }
+
+              if (outMessage.message.contains("budget")) {
+                loadPrices();
+              }
+
+              if (outMessage.message.contains("found some things")) {
+                loadMapGif();
+              }
+
+              runOnUiThread(new Runnable() {
+                public void run() {
+                  mAdapter.notifyDataSetChanged();
+                  if (mAdapter.getItemCount() > 1) {
+                    recyclerView.getLayoutManager().smoothScrollToPosition(recyclerView, null, mAdapter.getItemCount() - 1);
+                  }
+                }
+              });
+            }
           }
         } catch (Exception e) {
           e.printStackTrace();
@@ -275,45 +212,47 @@ public class MainActivity extends AppCompatActivity {
 
   }
 
-  private class SayTask extends AsyncTask<String, Void, String> {
-    @Override
-    protected String doInBackground(String... params) {
-      streamPlayer.playStream(textToSpeech.synthesize(new SynthesizeOptions.Builder()
-        .text(params[0])
-        .voice(SynthesizeOptions.Voice.EN_US_LISAVOICE)
-        .accept(SynthesizeOptions.Accept.AUDIO_WAV)
-        .build()).execute());
-      return "Did synthesize";
+    private void loadCategoryLabels(){
+        Message categoryMessage = new Message();
+        categoryMessage.id = CATEGORY_MSG_ID;
+        categoryMessage.message = "TV/Home Theatre";
+        messageArrayList.add(categoryMessage);
+
+        Message categoryMessage2 = new Message();
+        categoryMessage2.id = CATEGORY_MSG_ID;
+        categoryMessage2.message = "Computers & Accessories";
+        messageArrayList.add(categoryMessage2);
+
+        Message categoryMessage3 = new Message();
+        categoryMessage3.id = CATEGORY_MSG_ID;
+        categoryMessage3.message = "Headphones & Speakers";
+        messageArrayList.add(categoryMessage3);
+
+        Message categoryMessage4 = new Message();
+        categoryMessage4.id = CATEGORY_MSG_ID;
+        categoryMessage4.message = "Camera & Camcorders";
+        messageArrayList.add(categoryMessage4);
     }
+
+  private void loadPrices(){
+    Message categoryMessage = new Message();
+    categoryMessage.id = CATEGORY_MSG_ID;
+    categoryMessage.message = "400-599";
+    categoryMessage.secondMessage = "600-799";
+    messageArrayList.add(categoryMessage);
+
+    Message categoryMessage2 = new Message();
+    categoryMessage2.id = CATEGORY_MSG_ID;
+    categoryMessage2.message = "800-999";
+    categoryMessage2.secondMessage = "  1000+  ";
+    messageArrayList.add(categoryMessage2);
   }
 
-  //Record a message via Watson Speech to Text
-  private void recordMessage() {
-    if (listening != true) {
-      capture = microphoneHelper.getInputStream(true);
-      new Thread(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            speechService.recognizeUsingWebSocket(getRecognizeOptions(capture), new MicrophoneRecognizeDelegate());
-          } catch (Exception e) {
-            showError(e);
-          }
-        }
-      }).start();
-      listening = true;
-      Toast.makeText(MainActivity.this, "Listening....Click to Stop", Toast.LENGTH_LONG).show();
-
-    } else {
-      try {
-        microphoneHelper.closeInputStream();
-        listening = false;
-        Toast.makeText(MainActivity.this, "Stopped Listening....Click to Start", Toast.LENGTH_LONG).show();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-
-    }
+  private void loadMapGif(){
+    Log.d("ChatAdapter", "load map gif");
+    Message gifMessage = new Message();
+    gifMessage.id = GIF_MSG_ID;
+    messageArrayList.add(gifMessage);
   }
 
   /**
@@ -350,58 +289,6 @@ public class MainActivity extends AppCompatActivity {
       .inactivityTimeout(2000)
       .build();
   }
-
-  //Watson Speech to Text Methods.
-  private class MicrophoneRecognizeDelegate extends BaseRecognizeCallback {
-    @Override
-    public void onTranscription(SpeechRecognitionResults speechResults) {
-      if (speechResults.getResults() != null && !speechResults.getResults().isEmpty()) {
-        String text = speechResults.getResults().get(0).getAlternatives().get(0).getTranscript();
-        showMicText(text);
-      }
-    }
-
-    @Override
-    public void onError(Exception e) {
-      showError(e);
-      enableMicButton();
-    }
-
-    @Override
-    public void onDisconnected() {
-      enableMicButton();
-    }
-
-  }
-
-  private void showMicText(final String text) {
-    runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        inputMessage.setText(text);
-      }
-    });
-  }
-
-  private void enableMicButton() {
-    runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        btnRecord.setEnabled(true);
-      }
-    });
-  }
-
-  private void showError(final Exception e) {
-    runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-        e.printStackTrace();
-      }
-    });
-  }
-
 
 }
 
